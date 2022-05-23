@@ -1,7 +1,7 @@
 package ru.netology.base;
 
+import com.github.javafaker.Faker;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.BeforeEach;
 
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -9,22 +9,42 @@ import java.sql.Statement;
 public class DataBase {
 
     @SneakyThrows
-    void drop() {
+    public static void cleanDatabase() {
+        var statement = getStatement();
+        statement.executeUpdate("DELETE FROM  auth_codes;");
+        statement.executeUpdate("DELETE FROM  cards;");
+        statement.executeUpdate("DELETE FROM  users;");
+        statement.executeUpdate("DELETE FROM  card_transactions;");
+    }
 
-        String s1 = "DROP TABLE auth_codes";
-        String s2 = "DROP TABLE card_transactions";
-        String s3 = "DROP TABLE cards";
-        String s4 = "DROP TABLE users";
+    @SneakyThrows
+    public static Statement getStatement() {
+        var conn = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/app", "app", "pass"
+        );
+        var statement = conn.createStatement();
+        return statement;
+    }
 
-        try (
-                var conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/app", "app", "pass");
-                Statement s= conn.createStatement()) {
-            s.addBatch(s1);
-            s.addBatch(s2);
-            s.addBatch(s3);
-            s.addBatch(s4);
-            s.executeBatch();
+    @SneakyThrows
+    public static String verificationCode() {
+        var statement = getStatement();
+        {
+            var reseltSet = statement.executeQuery("SELECT * FROM auth_codes ORDER BY created DESC LIMIT 1;");
+            {
+                if (reseltSet.next()) {
+                    var code = reseltSet.getString("code");
+                    return code;
+                }
+            }
         }
+        return null;
+    }
+
+    static Faker faker = new Faker();
+
+    public static String getInvalidPassword() {
+        return faker.internet().password();
     }
 
 }
